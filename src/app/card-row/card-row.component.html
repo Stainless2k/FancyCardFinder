@@ -1,0 +1,11 @@
+<div style="display: flex">
+    <div *ngFor="let c of cards">
+        <a [href]="c.purchase_uris.cardmarket">
+            <img [src]="c.image_uris?.small">
+            <ng-container *ngFor="let cf of c.card_faces">
+                <img [src]="cf.image_uris.small">
+            </ng-container>
+        </a>
+        <div>{{c.prices.eur}}</div>
+    </div>
+</div>
