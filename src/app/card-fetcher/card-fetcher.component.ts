@@ -7,10 +7,15 @@ import {Card, SearchOptions} from 'scryfall-sdk';
     templateUrl: './card-fetcher.component.html',
     styleUrls: ['./card-fetcher.component.scss']
 })
+
 export class CardFetcherComponent implements OnInit, OnDestroy {
-    decklist: string;
-    options: SearchOptions = {unique: 'prints', order: 'released'};
+
+    static CARDNOTFOUND = 'YOU ABSOLUTE BUFFON THERE IS NO CARD NAMED ';
+    static OPTIONS: SearchOptions = {unique: 'art', order: 'released'};
+
+    decklist = '';
     cards: Card[][] = [];
+    errors: string[];
 
     constructor() {
     }
@@ -26,6 +31,7 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
 
     fetchcards() {
         this.cards = [];
+        this.errors = [];
         const names = this.decklist.split('\n');
         this.iterrateNames(names);
     }
@@ -36,7 +42,7 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
             const uris: Card[] = [];
             if (name.replace(/\s+/g, '').length > 1) {
                 const query = '!"' + name + '" game:paper';
-                scry.Cards.search(query, this.options)
+                scry.Cards.search(query, CardFetcherComponent.OPTIONS)
                     .on('data', card => {
                         uris.push(card);
                     })
@@ -49,6 +55,9 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
                     })
                     .on('done', () => {
                         console.log('next');
+                        if (uris.length < 1) {
+                            this.errors.push(CardFetcherComponent.CARDNOTFOUND + '"' + name + '"');
+                        }
                         this.iterrateNames(names);
                     });
             } else {

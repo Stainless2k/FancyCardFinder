@@ -3,6 +3,10 @@
 </mat-form-field>
 <button (click)="fetchcards()">-GO</button>
 <button (click)="fuckMKM()">fucking mkm</button>
+<ng-container *ngFor="let error of errors">
+    <div class="error">{{error}}</div>
+</ng-container>
 <ng-container *ngFor="let card of cards">
     <app-card-row [cards]="card"></app-card-row>
 </ng-container>
+
