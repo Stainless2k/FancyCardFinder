@@ -36,39 +36,21 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
     fetchcards() {
         this.cards = [];
         this.errors = [];
+        this.fuckMKM();
         const names = this.decklist.split('\n');
         this.iterrateNames(names);
     }
 
-    iterrateNames(names: string[]) {
-        if (names.length > 0) {
-            const name = names.shift();
+    async iterrateNames(names: string[]) {
+        for (const name of names) {
             const cards = new Collections.Set<RetardCard>();
             if (name.replace(/\s+/g, '').length > 1) {
-                const query = '!"' + name + '" game:paper';
-                scry.Cards.search(query, this.getOptions())
-                    .on('data', card => {
-                        cards.add(new RetardCard(card));
-                    })
-                    .on('end', async () => {
-                        const nonPromos = await this.getNonPromos(name);
-                        nonPromos.forEach(c => cards.add(new RetardCard(c)));
-                        this.cards.push(cards);
-                        console.log(name + ' done');
-                    })
-                    .on('error', err => {
-                        console.error(err);
-                    })
-                    .on('done',  () => {
-                        console.log('next');
-                        if (cards.size() < 1) {
-                            this.errors.push(CardFetcherComponent.CARDNOTFOUND + '"' + name + '"');
-                        }
-                        this.iterrateNames(names);
-                    });
+                const foundCards = await this.getAllCards(name);
+                foundCards.push(...(await this.getNonPromos(name)));
+                foundCards.forEach(c => cards.add(new RetardCard(c)));
+                this.cards.push(cards);
             } else {
-                console.log('ayyy');
-                this.iterrateNames(names);
+                console.log('empty line lol');
             }
         }
     }
@@ -81,11 +63,20 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
         }
     }
 
+    getAllCards(name: string): Promise<Card[]> {
+        const query = '!"' + name + '" game:paper';
+        return this.getCards(query, this.getOptions());
+    }
+
     getNonPromos(name: string): Promise<Card[]> {
         const query = '!"' + name + '" game:paper -is:promo';
-        const cards = scry.Cards.search(query, CardFetcherComponent.OPTIONS_ART)
+        return this.getCards(query, this.getOptions());
+    }
+
+    getCards(query: string, options: SearchOptions): Promise<Card[]> {
+        const cards = scry.Cards.search(query, options)
             .on('end', () => {
-                console.log(name + ' nonPromo');
+                console.log(query + ' done');
             })
             .on('error', err => {
                 console.error(err);
