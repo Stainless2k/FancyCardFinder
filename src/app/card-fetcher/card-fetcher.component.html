@@ -7,7 +7,7 @@
 <ng-container *ngFor="let error of errors">
     <div class="error">{{error}}</div>
 </ng-container>
-<ng-container *ngFor="let card of cards">
-    <app-card-row [retardCards]="card.toArray()"></app-card-row>
+<ng-container *ngFor="let cards of cardsArray">
+    <app-card-row [cards]="cards"></app-card-row>
 </ng-container>
 

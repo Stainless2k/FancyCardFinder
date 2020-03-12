@@ -17,7 +17,7 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
     static OPTIONS_PRINTS: SearchOptions = {unique: 'prints', order: 'released', include_extras: true};
 
     decklist = 'trophy mage';
-    cards: Collections.Set<RetardCard>[] = [];
+    cardsArray: Card[][] = [];
     errors: string[];
     getall = false;
 
@@ -34,25 +34,35 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
     }
 
     fetchcards() {
-        this.cards = [];
+        this.cardsArray = [];
         this.errors = [];
         this.fuckMKM();
         const names = this.decklist.split('\n');
-        this.iterrateNames(names);
+        this.megaQuery(names);
     }
 
-    async iterrateNames(names: string[]) {
+    async megaQuery(names: string[]) {
+        let namesQuery = '';
+        const rCards = new Collections.Set<RetardCard>();
+        const cardMap = new Map<string, Card[]>();
+
         for (const name of names) {
-            const cards = new Collections.Set<RetardCard>();
-            if (name.replace(/\s+/g, '').length > 1) {
-                const foundCards = await this.getAllCards(name);
-                foundCards.push(...(await this.getNonPromos(name)));
-                foundCards.forEach(c => cards.add(new RetardCard(c)));
-                this.cards.push(cards);
-            } else {
-                console.log('empty line lol');
-            }
+            namesQuery += '!"' + name + '" or ';
         }
+        namesQuery = '(' + namesQuery + ')';
+        const foundCards = await this.getCards(namesQuery + '" game:paper', this.getOptions());
+        foundCards.push(...(await this.getCards(namesQuery + '" game:paper -is:promo', this.getOptions())));
+        foundCards.forEach(c => rCards.add(new RetardCard(c)));
+        rCards.forEach(rc => {
+            const cName = rc.card.name;
+            if (cardMap.has(cName)) {
+                cardMap.get(cName).push(rc.card);
+            } else {
+                cardMap.set(cName, [rc.card]);
+            }
+        });
+
+        this.cardsArray = Array.from(cardMap.values());
     }
 
     private getOptions() {
@@ -61,16 +71,6 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
         } else {
             return CardFetcherComponent.OPTIONS_ART;
         }
-    }
-
-    getAllCards(name: string): Promise<Card[]> {
-        const query = '!"' + name + '" game:paper';
-        return this.getCards(query, this.getOptions());
-    }
-
-    getNonPromos(name: string): Promise<Card[]> {
-        const query = '!"' + name + '" game:paper -is:promo';
-        return this.getCards(query, this.getOptions());
     }
 
     getCards(query: string, options: SearchOptions): Promise<Card[]> {
@@ -88,4 +88,6 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void {
 
     }
+
 }
+

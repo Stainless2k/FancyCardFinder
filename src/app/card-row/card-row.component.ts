@@ -10,13 +10,12 @@ import {RetardCard} from '../../model/cardEx';
 })
 export class CardRowComponent implements OnInit {
 
-    @Input() retardCards: RetardCard[];
-    cards: Card[];
+    @Input() cards: Card[];
     constructor() {
     }
 
     ngOnInit(): void {
-        this.cards = this.retardCards.map(c => c.card).sort((a, b) =>
+        this.cards = this.cards.sort((a, b) =>
             Date.parse(b.released_at) - Date.parse(a.released_at));
     }
 
