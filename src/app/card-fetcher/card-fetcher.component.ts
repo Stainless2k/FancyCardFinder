@@ -50,8 +50,7 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
             namesQuery += '!"' + name + '" or ';
         }
         namesQuery = '(' + namesQuery + ')';
-        const foundCards = await this.getCards(namesQuery + '" game:paper', this.getOptions());
-        foundCards.push(...(await this.getCards(namesQuery + '" game:paper -is:promo', this.getOptions())));
+        const foundCards = await this.getCards(namesQuery);
         foundCards.forEach(c => rCards.add(new RetardCard(c)));
         rCards.forEach(rc => {
             const cName = rc.card.name;
@@ -73,16 +72,28 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
         }
     }
 
-    getCards(query: string, options: SearchOptions): Promise<Card[]> {
-        const cards = scry.Cards.search(query, options)
+    async getCards(query: string): Promise<Card[]> {
+        let result: Card[] = [];
+        if (this.getall) {
+            result = await this.queryCards(query + '" game:paper', CardFetcherComponent.OPTIONS_PRINTS);
+        } else {
+            result = await this.queryCards(query + '" game:paper', CardFetcherComponent.OPTIONS_ART);
+            result.push(...(await this.queryCards(query + '" game:paper -is:promo', CardFetcherComponent.OPTIONS_ART)));
+            result.push(...(await this.queryCards(query + '" game:paper frame:extendedart', CardFetcherComponent.OPTIONS_ART)));
+        }
+
+        return result;
+    }
+
+    queryCards(query: string, options: SearchOptions): Promise<Card[]> {
+        return scry.Cards.search(query, options)
             .on('end', () => {
-                console.log(query + ' done');
+                console.log(query + ' unique:' + options.unique + ' done');
             })
             .on('error', err => {
                 console.error(err);
             })
             .waitForAll();
-        return cards;
     }
 
     ngOnDestroy(): void {

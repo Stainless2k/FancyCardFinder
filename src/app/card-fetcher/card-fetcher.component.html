@@ -3,7 +3,7 @@
 </mat-form-field>
 <button (click)="fetchcards()">-GO</button>
 <button (click)="fuckMKM()">fucking mkm</button>
-<mat-slide-toggle [(ngModel)]="getall"></mat-slide-toggle>
+<mat-slide-toggle [(ngModel)]="getall">Get every print</mat-slide-toggle>
 <ng-container *ngFor="let error of errors">
     <div class="error">{{error}}</div>
 </ng-container>
