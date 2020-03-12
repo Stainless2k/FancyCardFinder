@@ -31,6 +31,7 @@
     "rxjs": "~6.5.4",
     "scryfall-sdk": "^1.6.1",
     "tslib": "^1.10.0",
+    "typescript-collections": "^1.3.3",
     "zone.js": "~0.10.2"
   },
   "devDependencies": {
