@@ -33,35 +33,75 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
             .replace(/^\s*|^\n/gm, '');
     }
 
-    fetchcards() {
+    async fetchcards() {
         this.cardsArray = [];
         this.errors = [];
         this.fuckMKM();
         const names = this.decklist.split('\n');
-        this.megaQuery(names);
+        const names2 = [];
+        const cardMap = new Map<string, Card[]>();
+        for (const name of names) {
+            cardMap.set(name.toLocaleLowerCase(), []);
+        }
+        const size = 20;
+        while (names.length > 0) {
+            names2.push(names.splice(0, size));
+        }
+
+        for (const nameList of names2) {
+            (await this.megaQuery2(nameList)).forEach((c) => cardMap.set(c[0].name.toLocaleLowerCase(), c));
+        }
+        this.cardsArray = Array.from(cardMap.values());
     }
 
-    async megaQuery(names: string[]) {
+    async megaQuery2(names: string[]): Promise<Card[][]> {
         let namesQuery = '';
         const rCards = new Collections.Set<RetardCard>();
-        const cardMap = new Map<string, Card[]>();
+        const cardsByName = new Map<string, Card[]>();
+        const cardsByIlluID = new Map<string, Card[]>();
+        const cardMap = new Map<string, Map<string, Map<string | number, Card[]>>>();
 
         for (const name of names) {
             namesQuery += '!"' + name + '" or ';
         }
         namesQuery = '(' + namesQuery + ')';
-        const foundCards = await this.getCards(namesQuery);
-        foundCards.forEach(c => rCards.add(new RetardCard(c)));
-        rCards.forEach(rc => {
-            const cName = rc.card.name;
-            if (cardMap.has(cName)) {
-                cardMap.get(cName).push(rc.card);
-            } else {
-                cardMap.set(cName, [rc.card]);
+        const foundCards = await this.queryCards(namesQuery + ' game:paper', CardFetcherComponent.OPTIONS_PRINTS);
+        foundCards.forEach(c => {
+            if (!cardMap.has(c.name)) {
+                cardMap.set(c.name, new Map<string, Map<string, Card[]>>());
             }
+            if (!cardMap.get(c.name).has(c.illustration_id)) {
+                cardMap.get(c.name).set(c.illustration_id, new Map<string, Card[]>());
+            }
+            if (!cardMap.get(c.name).get(c.illustration_id).has(c.frame)) {
+                cardMap.get(c.name).get(c.illustration_id).set(c.frame, []);
+            }
+            cardMap.get(c.name).get(c.illustration_id).get(c.frame).push(c);
         });
 
-        this.cardsArray = Array.from(cardMap.values());
+        cardMap.forEach(cName => {
+            cName.forEach(cIlluID => {
+                cIlluID.forEach(cFrame => {
+                    let cNewest: Card;
+                    if (cFrame.length === 1) {
+                        cNewest = cFrame[0];
+                    } else {
+                        const sorted = cFrame.sort((a, b) => Date.parse(b.released_at) - Date.parse(a.released_at));
+                        cNewest = sorted.find((c) => !c.promo);
+                        if (!cNewest) {
+                            cNewest = sorted[0];
+                        }
+                    }
+                    if (cardsByName.has(cNewest.name)) {
+                        cardsByName.get(cNewest.name).push(cNewest);
+                    } else {
+                        cardsByName.set(cNewest.name, [cNewest]);
+                    }
+                });
+            });
+        });
+
+        return Array.from(cardsByName.values());
     }
 
     private getOptions() {
@@ -75,11 +115,11 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
     async getCards(query: string): Promise<Card[]> {
         let result: Card[] = [];
         if (this.getall) {
-            result = await this.queryCards(query + '" game:paper', CardFetcherComponent.OPTIONS_PRINTS);
+            result = await this.queryCards(query + ' game:paper', CardFetcherComponent.OPTIONS_PRINTS);
         } else {
-            result = await this.queryCards(query + '" game:paper', CardFetcherComponent.OPTIONS_ART);
-            result.push(...(await this.queryCards(query + '" game:paper -is:promo', CardFetcherComponent.OPTIONS_ART)));
-            result.push(...(await this.queryCards(query + '" game:paper frame:extendedart', CardFetcherComponent.OPTIONS_ART)));
+            result = await this.queryCards(query + ' game:paper', CardFetcherComponent.OPTIONS_ART);
+            result.push(...(await this.queryCards(query + ' game:paper -is:promo', CardFetcherComponent.OPTIONS_ART)));
+            result.push(...(await this.queryCards(query + ' game:paper frame:extendedart', CardFetcherComponent.OPTIONS_ART)));
         }
 
         return result;
