@@ -56,9 +56,7 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
 
     async megaQuery2(names: string[]): Promise<Card[][]> {
         let namesQuery = '';
-        const rCards = new Collections.Set<RetardCard>();
         const cardsByName = new Map<string, Card[]>();
-        const cardsByIlluID = new Map<string, Card[]>();
         const cardMap = new Map<string, Map<string, Map<string | number, Card[]>>>();
 
         for (const name of names) {
@@ -103,15 +101,7 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
 
         return Array.from(cardsByName.values());
     }
-
-    private getOptions() {
-        if (this.getall) {
-            return CardFetcherComponent.OPTIONS_PRINTS;
-        } else {
-            return CardFetcherComponent.OPTIONS_ART;
-        }
-    }
-
+    
     async getCards(query: string): Promise<Card[]> {
         let result: Card[] = [];
         if (this.getall) {
