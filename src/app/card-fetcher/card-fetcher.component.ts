@@ -95,13 +95,21 @@ export class CardFetcherComponent implements OnInit, OnDestroy {
                     } else {
                         cardsByName.set(cNewest.name, [cNewest]);
                     }
+                    const extend = cFrame.find((c) => c.frame_effects?.includes('extendedart'));
+                    if (extend) {
+                        cardsByName.get(extend.name).push(extend);
+                    }
+                    const full = cFrame.find((c) => c.full_art);
+                    if (full) {
+                        cardsByName.get(full.name).push(full);
+                    }
                 });
             });
         });
 
         return Array.from(cardsByName.values());
     }
-    
+
     async getCards(query: string): Promise<Card[]> {
         let result: Card[] = [];
         if (this.getall) {
